@@ -1,0 +1,40 @@
+name: 汇率监控
+
+on:
+  schedule:
+    # 每10分钟检查一次 (GitHub Actions 最小间隔5分钟)
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+      
+    - name: 设置Python环境
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: 安装依赖
+      run: |
+        pip install requests
+        
+    - name: 运行汇率监控
+      env:
+        EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
+        EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+        EMAIL_RECEIVER: ${{ secrets.EMAIL_RECEIVER }}
+        ALERT_THRESHOLD: ${{ secrets.ALERT_THRESHOLD }}
+        WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+      run: python currency_monitor_cloud.py
+      
+    - name: 保存日志
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: monitor-logs
+        path: '*.log'
